@@ -1,10 +1,12 @@
-const express = require('express');
-const { animals } = require('./data/animals');
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
+const { animals } = require('./data/animals');
+
 const PORT = process.env.PORT || 3001;
 const app = express();
 
+app.use(express.static('public'));
 //parse incoming data
 app.use(express.urlencoded({ extended: true }));
 //parse incoming JSON data
@@ -45,7 +47,7 @@ function filterByQuery(query, animalsArr)
         filteredResults = filteredResults.filter(animal => animal.name === query.name);
     }
     return filteredResults;
-}
+};
 
 function findById(id, animalsArr)
 {
@@ -59,15 +61,15 @@ function createNewAnimal(body, animalsArr)
     animalsArr.push(animal);
     fs.writeFileSync
     (
-        path.join(__dirname, './data/animal.json'),
+        path.join(__dirname, './data/animals.json'),
         JSON.stringify({ animals: animalsArr }, null, 2)
     );
     return animal;
 };
 
-function validateAnimal (animal)
+function validateAnimal(animal)
 {
-    if (animal.name || typeof animal.name !== 'string')
+    if (!animal.name || typeof animal.name !== 'string')
     {
         return false;
     }
@@ -95,6 +97,7 @@ app.get('/api/animals', (req, res) =>
     }
     res.json(results);
 });
+
 app.get('/api/animals/:id', (req, res) =>
 {
     const result = findById(req.params.id, animals);
@@ -107,6 +110,7 @@ app.get('/api/animals/:id', (req, res) =>
         res.send(404);
     }
 });
+
 app.post('/api/animals', (req, res) =>
 {
     //set id based on what the next index of the array will be
@@ -120,12 +124,33 @@ app.post('/api/animals', (req, res) =>
     {
         //add animal to JSON file and animals array
         const animal = createNewAnimal(req.body, animals);
-        res.json(req.body);
+        res.json(animal);
     }
 });
+
+app.get('/', (req, res) =>
+{
+    res.sendFile(path.join(__dirname, './public/index.html'));
+});
+
+app.get('/animals', (req, res) =>
+{
+    res.sendFile(path.join(__dirname, './public/animals.html'));
+});
+
+app.get('/zookeepers', (req, res) =>
+{
+    res.sendFile(path.join(__dirname, './public.zookeepers.html'));
+});
+
+//wildcard route to catch invalid requests and send them back to the homepage (this should always come last)
+app.get('*', (req, res) => 
+{
+    res.sendFile(path.join(__dirname, './public/index.html'));
+});
+
+//app.listen should always be last
 app.listen(PORT, () =>
 {
     console.log(`API server now on port ${PORT}!`);
 });
-
-'http://localhost:3001/api/animals'
